@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="CG_SessionButton">Сессия</string>
+    <string name="CG_SessionLogin">Войти через сессию</string>
+    <string name="CG_SessionFile">Файл Telethon / Pyrogram (.session)</string>
+    <string name="CG_SessionTdata">Архив tdata (.zip)</string>
+    <string name="CG_SessionExport">Экспорт сессии аккаунта</string>
+    <string name="CG_SessionPasscode">Локальный пароль Desktop (необязательно)</string>
+    <string name="CG_SessionPasscodeInfo">Оставьте пустым, если в Telegram Desktop нет локального пароля. Это не облачный пароль Telegram.</string>
+    <string name="CG_SessionSelectAccount">Выберите аккаунт</string>
+    <string name="CG_SessionImportWarning">Импортируйте только свою сессию. Будет использована её авторизация. Не запускайте клиенты с одной авторизацией одновременно: Telegram может её отозвать.</string>
+    <string name="CG_SessionExportWarning">Экспортированный файл даёт полный доступ к аккаунту без кода входа и облачного пароля. Сохраняйте его только в надёжном месте. При утечке завершите сессию этого устройства в Telegram.</string>
+    <string name="CG_SessionInvalid">Некорректная сессия. Проверьте формат, Auth Key (512 hex-символов) и DC ID (1–5). Поддерживаются только пользовательские аккаунты основной сети.</string>
+    <string name="CG_SessionFileError">Не удалось прочитать файл. Выберите отдельную базу .session Telethon или Pyrogram, корректно закрытую её клиентом.</string>
+    <string name="CG_SessionTdataError">Не удалось прочитать tdata. Проверьте локальный пароль и содержимое ZIP (key_data и файлы авторизации аккаунтов). Удалите кэш, если распакованный архив превышает 64 МБ.</string>
+    <string name="CG_SessionLoginError">Проверка сессии не удалась или истекло время ожидания. Проверьте подключение, DC ID и действительность авторизации.</string>
+    <string name="CG_SessionAlreadyAdded">Этот аккаунт или авторизация уже добавлены.</string>
+    <string name="CG_SessionExportError">Не удалось экспортировать сессию. Проверьте место сохранения и свободную память. По выбранному пути мог остаться неполный файл.</string>
+    <string name="CG_SessionExported">Сессия экспортирована</string>
+</resources>

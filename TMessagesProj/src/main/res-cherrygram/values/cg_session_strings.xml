@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="CG_SessionButton">Session</string>
+    <string name="CG_SessionLogin">Log in with a session</string>
+    <string name="CG_SessionFile">Telethon / Pyrogram file (.session)</string>
+    <string name="CG_SessionTdata">tdata archive (.zip)</string>
+    <string name="CG_SessionExport">Export account session</string>
+    <string name="CG_SessionPasscode">Desktop local passcode (optional)</string>
+    <string name="CG_SessionPasscodeInfo">Leave empty if Telegram Desktop has no local passcode. This is not your Telegram two-step verification password.</string>
+    <string name="CG_SessionSelectAccount">Select an account</string>
+    <string name="CG_SessionImportWarning">Only import your own session. This will reuse its authorization. Do not run clients with the same authorization at the same time: Telegram may revoke it.</string>
+    <string name="CG_SessionExportWarning">The exported file grants full access to your account without a login code or two-step verification password. Save it only to a location you trust. Revoke this device in Telegram if the file is exposed.</string>
+    <string name="CG_SessionInvalid">Invalid session. Check the format, 256-byte auth key and DC ID (1–5). Production user accounts only.</string>
+    <string name="CG_SessionFileError">Cannot read the document. Select a standalone Telethon or Pyrogram .session database, closed cleanly by its client.</string>
+    <string name="CG_SessionTdataError">Cannot read tdata. Check the local passcode and ZIP contents (key_data and account authorization files). Remove cache files if the archive exceeds 64 MB unpacked.</string>
+    <string name="CG_SessionLoginError">Session verification failed or timed out. Check your connection, DC ID and whether the authorization is still valid.</string>
+    <string name="CG_SessionAlreadyAdded">This account or authorization is already added.</string>
+    <string name="CG_SessionExportError">Could not export the session. Check the destination and available space. The destination may contain an incomplete file.</string>
+    <string name="CG_SessionExported">Session exported</string>
+</resources>
