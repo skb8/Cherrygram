@@ -1,0 +1,76 @@
+name: Session portability
+
+on:
+  push:
+    branches: [main, feature/session-portability]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: session-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  codecs:
+    name: Session format interoperability
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install cryptography==50.0.2
+      - run: bash tests/sessions/run.sh
+
+  apk:
+    name: Android APK
+    needs: codecs
+    # Private build inputs are only available to pushes/manual runs in this fork.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Restore separately supplied upstream source files
+        if: vars.CHERRYGRAM_BUILD_INPUTS_REPO != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.CHERRYGRAM_BUILD_INPUTS_REPO }}
+          token: ${{ secrets.CHERRYGRAM_BUILD_INPUTS_TOKEN }}
+          path: .build-inputs
+          persist-credentials: false
+      - name: Check source completeness
+        run: python3 tools/ci/check_sources.py .build-inputs
+      - name: Fetch native and media submodules
+        run: git submodule update --init --recursive --depth=1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
+      - name: Prepare debug build configuration
+        run: |
+          touch secrets_for_ci.env
+          keytool -genkeypair -keystore Your_Key.jks -storepass Your_Password -keypass Your_Password -alias Your_Alias -keyalg RSA -keysize 2048 -validity 365 -dname 'CN=Cherrygram Session Debug'
+      - name: Build debug APK (without Telegram upload tasks)
+        run: bash gradlew :TMessagesProj_AppStandalone:assembleAfatDebug -x sendApk --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx5g
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cherrygram-session-debug
+          path: TMessagesProj_AppStandalone/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 7

@@ -238,6 +238,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             AUTH_TYPE_WORD = 16,
             AUTH_TYPE_PHRASE = 17;
 
+    private uz.unnarsx.cherrygram.sessions.SessionTransfer sessionTransfer;
+
     private final static int MODE_LOGIN = 0,
             MODE_CANCEL_ACCOUNT_DELETION = 1,
             MODE_CHANGE_PHONE_NUMBER = 2,
@@ -512,6 +514,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public void onFragmentDestroy() {
+        if (sessionTransfer != null) sessionTransfer.destroy();
         super.onFragmentDestroy();
         for (int a = 0; a < views.length; a++) {
             if (views[a] != null) {
@@ -1153,6 +1156,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public void onActivityResultFragment(int requestCode, int resultCode, Intent data) {
+        if (sessionTransfer != null && sessionTransfer.onActivityResult(requestCode, resultCode, data)) return;
         LoginActivityRegisterView registerView = (LoginActivityRegisterView) views[VIEW_REGISTER];
         if (registerView != null) {
             registerView.imageUpdater.onActivityResult(requestCode, resultCode, data);
@@ -1655,6 +1659,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private boolean pendingSwitchingAccount;
 
     private void onAuthSuccess(TLRPC.TL_auth_authorization res, boolean afterSignup) {
+        if (sessionTransfer != null && sessionTransfer.isBusy()) return;
         MessagesController.getInstance(currentAccount).cleanup();
         ConnectionsManager.getInstance(currentAccount).setUserId(res.user.id);
         UserConfig.getInstance(currentAccount).clearConfig();
@@ -2466,7 +2471,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-                    int buttonWidth = (parentWidth - dp(8)) / 2;
+                    int buttonWidth = (parentWidth - dp(activityMode == MODE_LOGIN ? 16 : 8)) / (activityMode == MODE_LOGIN ? 3 : 2);
                     super.onMeasure(
                             MeasureSpec.makeMeasureSpec(buttonWidth, MeasureSpec.EXACTLY),
                             MeasureSpec.makeMeasureSpec(dp(46), MeasureSpec.EXACTLY)
@@ -2493,7 +2498,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-                    int buttonWidth = (parentWidth - dp(8)) / 2;
+                    int buttonWidth = (parentWidth - dp(activityMode == MODE_LOGIN ? 16 : 8)) / (activityMode == MODE_LOGIN ? 3 : 2);
                     super.onMeasure(
                             MeasureSpec.makeMeasureSpec(buttonWidth, MeasureSpec.EXACTLY),
                             MeasureSpec.makeMeasureSpec(dp(46), MeasureSpec.EXACTLY)
@@ -2509,6 +2514,28 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             qrButton.setText(sb1, false);
             qrButton.setOnClickListener(view -> exportLoginToken(true));
             buttonsBox.addView(qrButton);
+            if (activityMode == MODE_LOGIN) {
+                ButtonWithCounterView sessionButton = new ButtonWithCounterView(context, getResourceProvider()) {
+                    @Override
+                    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                        super.onMeasure(MeasureSpec.makeMeasureSpec((MeasureSpec.getSize(widthMeasureSpec) - dp(16)) / 3, MeasureSpec.EXACTLY),
+                                MeasureSpec.makeMeasureSpec(dp(46), MeasureSpec.EXACTLY));
+                    }
+                };
+                sessionButton.setRound();
+                sessionButton.setText(getString(R.string.CG_SessionButton), false);
+                sessionButton.setOnClickListener(v -> {
+                    if (sessionTransfer == null) {
+                        sessionTransfer = new uz.unnarsx.cherrygram.sessions.SessionTransfer(LoginActivity.this, user -> {
+                            TLRPC.TL_auth_authorization authorization = new TLRPC.TL_auth_authorization();
+                            authorization.user = user;
+                            onAuthSuccess(authorization);
+                        });
+                    }
+                    sessionTransfer.showImport();
+                });
+                buttonsBox.addView(sessionButton);
+            }
 
             addView(buttonsBox, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.FILL_HORIZONTAL | Gravity.BOTTOM, 22, 15, 22, 14));
             /** Cherrygram finish */
@@ -3638,19 +3665,16 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             protected void onDraw(Canvas canvas) {
                 super.onDraw(canvas);
 
-                final float cx = getMeasuredWidth() / 2f;
-
-                path.rewind();
-                AndroidUtilities.rectTmp.set(0, 0, cx - lerp(0, dp(4), t), getMeasuredHeight());
-                setRadii(dp(8), lerp(0, dp(8), t));
-                path.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
-                canvas.drawPath(path, paint);
-
-                path.rewind();
-                AndroidUtilities.rectTmp.set(cx + lerp(0, dp(4), t), 0, getMeasuredWidth(), getMeasuredHeight());
-                setRadii(lerp(0, dp(8), t), dp(8));
-                path.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
-                canvas.drawPath(path, paint);
+                final int count = getChildCount();
+                final float width = (getMeasuredWidth() - dp(8) * (count - 1)) / (float) count;
+                for (int i = 0; i < count; i++) {
+                    path.rewind();
+                    float left = i * (width + dp(8));
+                    AndroidUtilities.rectTmp.set(left, 0, left + width, getMeasuredHeight());
+                    setRadii(dp(8), dp(8));
+                    path.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
+                    canvas.drawPath(path, paint);
+                }
             }
 
             @Override
@@ -3695,6 +3719,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private ImageView imageView = null;
 
         public void exportLoginToken(boolean show) {
+            if (sessionTransfer != null && sessionTransfer.isBusy()) return;
             getNotificationCenter().removeObserver(this, NotificationCenter.onUpdateLoginToken);
 
             Context context = getContext();
@@ -3722,6 +3747,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             AlertDialog progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
             int requestId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 progressDialog.dismiss();
+                if (sessionTransfer != null && sessionTransfer.isBusy()) return;
                 if (error == null) {
                     if (response instanceof TLRPC.TL_auth_loginToken res) {
                         getNotificationCenter().addObserver(this, NotificationCenter.onUpdateLoginToken);
@@ -3796,6 +3822,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         TLRPC.TL_auth_importLoginToken request = new TLRPC.TL_auth_importLoginToken();
                         request.token = res.token;
                         getConnectionsManager().sendRequest(request, (response1, error1) -> AndroidUtilities.runOnUIThread(() -> {
+                            if (sessionTransfer != null && sessionTransfer.isBusy()) return;
                             if (error1 == null) {
                                 if (response1 instanceof TLRPC.TL_auth_loginTokenSuccess) {
                                     postDelayed(() -> {
